@@ -266,6 +266,19 @@ const FingoSidebar = ({ open }) => {
                                         <span> Test DND</span>
                                     </a>
                                 </li>
+                                <li>
+                                    <a
+                                        href='#'
+                                        className='FingoShapeRadius'
+                                        onClick={e => {
+                                            e.preventDefault()
+                                            navigate(`/admin/quiz/dnd/text`)
+                                        }}
+                                    >
+                                        <div className='icon'></div>
+                                        <span> DND Quiz Text</span>
+                                    </a>
+                                </li>
                             </>
                         )}
                     </ul>

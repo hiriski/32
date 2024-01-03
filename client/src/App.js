@@ -52,6 +52,7 @@ import { authUtils } from './utils'
  * Pages
  */
 const TestDNDPage2 = React.lazy(() => import('./pages/admin/TestDNDPage2'))
+const DNDQuizTextPage = React.lazy(() => import('./pages/admin/DNDQuizTextPage'))
 
 const App = () => {
     const dispatch = useDispatch()
@@ -248,6 +249,11 @@ const App = () => {
                             exact
                             path='/admin/test-dnd'
                             element={<TestDNDPage2 />}
+                        />
+                        <Route
+                            exact
+                            path='/admin/quiz/dnd/text'
+                            element={<DNDQuizTextPage />}
                         />
                         <Route
                             exact

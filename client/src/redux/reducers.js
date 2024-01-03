@@ -9,6 +9,7 @@ import { authPersistedSlice } from './auth/auth.persisted.slice'
 import { rewardSlice } from './reward'
 import { adminSlice } from './admin'
 import { persistedGuestSlice } from './persisted-guest'
+import { dndQuizTextSlice } from './DNDQuizText'
 
 // plain reducers
 const plainReducers = {
@@ -19,6 +20,7 @@ const plainReducers = {
     [rewardSlice.name]: rewardSlice.reducer,
     [adminSlice.name]: adminSlice.reducer,
     [persistedGuestSlice.name]: persistedGuestSlice.reducer,
+    [dndQuizTextSlice.name]: dndQuizTextSlice.reducer,
 }
 
 // root reducer
