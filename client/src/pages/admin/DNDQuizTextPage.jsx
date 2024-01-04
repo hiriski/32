@@ -1,4 +1,5 @@
 /* eslint-disable react-hooks/exhaustive-deps */
+
 import React, {
     Fragment,
     useCallback,
@@ -7,7 +8,7 @@ import React, {
     useRef,
     useState,
 } from 'react'
-import { DragDropContext, Droppable } from 'react-beautiful-dnd'
+import { DragDropContext, Draggable, Droppable } from 'react-beautiful-dnd'
 import { Helmet } from 'react-helmet'
 import { FingoHomeLayout, FingoBaseLayout } from 'src/components/layouts'
 import styled from 'styled-components'
@@ -142,13 +143,15 @@ const INITIAL_DATA = {
     __v: 0,
 }
 
-const FormTextInput = ({ onSubmit }) => {
+const FormTextInput = ({ onSubmit, editValues }) => {
     const [values, setValues] = useState({
         uuid: null,
         label: '',
         width: null,
         isBlankText: false,
     })
+
+    console.log('editValues', editValues)
 
     const onChange = (prop, value) => {
         setValues({
@@ -165,7 +168,7 @@ const FormTextInput = ({ onSubmit }) => {
 
     const _onSubmit = () => {
         const submitValues = {
-            uuid: uuidv4(),
+            uuid: editValues ? values.uuid : uuidv4(),
             isBlankText: values.isBlankText,
             label: values.isBlankText ? null : values.label,
             width: values.isBlankText ? values.width : null,
@@ -174,6 +177,17 @@ const FormTextInput = ({ onSubmit }) => {
             onSubmit(submitValues)
         }
     }
+
+    useEffect(() => {
+        if (editValues) {
+            setValues({
+                uuid: editValues.uuid,
+                label: editValues.label,
+                width: editValues.width,
+                isBlankText: editValues.isBlankText,
+            })
+        }
+    }, [editValues])
 
     return (
         <FormTextInputBox>
@@ -256,6 +270,10 @@ const DNDQuizTextPage = () => {
     const [listDroppable, setListDroppable] = useState(INITIAL_TARGET_PLACES)
     const [textList, setTextList] = useState(INITIAL_DATA.textList)
     const [isPopoverOpen, setIsPopoverOpen] = useState(textList.map(x => false))
+    const [isOpenPopoverEdit, setIsOpenPopoverEdit] = useState(
+        textList.map(x => false)
+    )
+    const [editValues, setEditValues] = useState(null)
 
     const onClickReset = () => {
         // setAvailableValues(INITIAL_AVAILABLE_VALUES)
@@ -420,9 +438,24 @@ const DNDQuizTextPage = () => {
         }, 250)
     }
 
-    const onSubmit = values => {
+    const onClickEditText = (e, paramIndex, values) => {
+        e.preventDefault()
+        setEditValues(values)
+        setTimeout(() => {
+            setIsOpenPopoverEdit(
+                isPopoverOpen.map((_, index) => paramIndex === index)
+            )
+        }, 250)
+    }
+
+    const onSubmit = (values, paramIndex) => {
         console.log('VALUES-->>>', values)
         setIsPopoverOpen(textList.map(x => false))
+
+        const newValues = textList.splice(paramIndex, 1, values)
+        console.log('newValues', newValues)
+
+        // setTextList()
     }
 
     return (
@@ -438,42 +471,16 @@ const DNDQuizTextPage = () => {
                             <h4 className='text-center mb-0'>Drag and Drop</h4>
                         </DraggableHeader> */}
                         <FormWrapper>
+                            {/* prettier-ignore */}
                             <Droppable droppableId={INITIAL_PLACE_KEY}>
                                 {(provided, snapshot) => {
                                     console.log('snapshot', snapshot)
                                     return (
-                                        <InitialPlaceBox
-                                            {...provided.droppableProps}
-                                            ref={provided.innerRef}
-                                            className={`${
-                                                app_isDarkTheme ? 'dark' : ''
-                                            }`}
-                                        >
+                                        <InitialPlaceBox {...provided.droppableProps} ref={provided.innerRef} className={`${app_isDarkTheme ? 'dark' : ''}`}>
                                             <ItemContainer>
-                                                {Object.values(listDroppable)
-                                                    .find(
-                                                        x =>
-                                                            x.id ===
-                                                            INITIAL_PLACE_KEY
-                                                    )
-                                                    .list.map(
-                                                        (x, itemIndex) => (
-                                                            <DraggableItem
-                                                                key={x.id}
-                                                                id={x.id}
-                                                                text={x.label}
-                                                                index={
-                                                                    itemIndex
-                                                                }
-                                                                onDelete={() =>
-                                                                    onClickDelete(
-                                                                        INITIAL_PLACE_KEY,
-                                                                        itemIndex
-                                                                    )
-                                                                }
-                                                            />
-                                                        )
-                                                    )}
+                                                {Object.values(listDroppable).find(x => x.id === INITIAL_PLACE_KEY).list.map((x, itemIndex) => (
+                                                    <DraggableItem key={x.id} id={x.id} text={x.label} index={itemIndex} onDelete={() => onClickDelete(INITIAL_PLACE_KEY, itemIndex) }/>
+                                                ))}
                                                 {provided.placeholder}
                                             </ItemContainer>
                                         </InitialPlaceBox>
@@ -482,204 +489,105 @@ const DNDQuizTextPage = () => {
                             </Droppable>
                         </FormWrapper>
 
+                        {/* prettier-ignore */}
                         <ListTextWrapper>
-                            <ListTextBox>
-                                {textList.length > 0 ? (
-                                    textList.map((x, index) => {
-                                        return (
-                                            <Fragment>
-                                                <ListTextItem
-                                                    className={`${
-                                                        x.isBlankText
-                                                            ? 'isBlankText'
-                                                            : ''
-                                                    }`}
-                                                >
-                                                    {x.isBlankText ? (
-                                                        <span
-                                                            style={{
-                                                                width:
-                                                                    x.width ??
-                                                                    20,
-                                                            }}
-                                                        ></span>
-                                                    ) : (
-                                                        <span id={x.uuid}>
-                                                            {x.label}
-                                                        </span>
-                                                    )}
-                                                    <DeleteTextItemBtn
-                                                        className='DeleteTextItemBtn'
-                                                        onClick={() =>
-                                                            onClickDeleteItem(
-                                                                index
-                                                            )
-                                                        }
-                                                    >
-                                                        <CloseIcon />
-                                                    </DeleteTextItemBtn>
-                                                </ListTextItem>
-                                                {(textList.length - 1 !==
-                                                    index ||
-                                                    textList.length === 0) && (
-                                                    <Popover
-                                                        isOpen={
-                                                            isPopoverOpen[index]
-                                                        }
-                                                        positions={[
-                                                            'top',
-                                                            'right',
-                                                            'left',
-                                                            'bottom',
-                                                        ]}
-                                                        padding={10}
-                                                        clickOutsideCapture={
-                                                            true
-                                                        }
-                                                        onClickOutside={e => {
-                                                            if (e.target) {
-                                                                setIsPopoverOpen(
-                                                                    textList.map(
-                                                                        x =>
-                                                                            false
+                            <Droppable direction='horizontal' droppableId="TEXT_LIST">
+                                {(provided, snapshot) => {
+                                    return (
+                                        <ListTextBox {...provided.droppableProps} ref={provided.innerRef} className={`${app_isDarkTheme ? 'dark' : ''}`}>
+                                            {textList.length > 0 ? (
+                                                textList.map((x, index) => {
+                                                    return (
+                                                        <Fragment key={String(index)}>
+                                                            <Draggable draggableId={x.uuid} index={index}>
+                                                                {(provided, snapshot) => {
+                                                                    // console.log('snapshot', snapshot)
+                                                                    return (
+                                                                        <ListTextItem ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps} className={`${x.isBlankText ? 'isBlankText' : ''}`}>
+                                                                            {x.isBlankText ? (
+                                                                                <span style={{width: x.width ?? 20}}></span>
+                                                                            ) : (
+                                                                                <Popover ref={clickMeButtonRef} isOpen={isOpenPopoverEdit[index]} positions={['top', 'right', 'left', 'bottom']} padding={10} clickOutsideCapture={true} onClickOutside={e => {
+                                                                                    if (e.target) {
+                                                                                        setIsOpenPopoverEdit(textList.map(x => false))
+                                                                                    }}}
+                                                                                    content={({position, childRect, popoverRect}) => (
+                                                                                        <ArrowContainer position={position} childRect={childRect} popoverRect={popoverRect} arrowColor={'blue'} arrowSize={10} arrowStyle={{opacity: 1}}>
+                                                                                            <FormTextInput onSubmit={values => onSubmit(values, index)} editValues={editValues} />
+                                                                                        </ArrowContainer>
+                                                                                    )}
+                                                                                >
+                                                                                    <span id={x.uuid} onClick={e => onClickEditText(e, index, x)}>{x.label}</span>
+                                                                                </Popover>
+                                                                            )}
+                                                                            <DeleteTextItemBtn className='DeleteTextItemBtn' onClick={() => onClickDeleteItem(index)}>
+                                                                                <CloseIcon />
+                                                                            </DeleteTextItemBtn>
+                                                                        </ListTextItem> 
                                                                     )
-                                                                )
-                                                            }
-                                                        }}
-                                                        ref={clickMeButtonRef} // if you'd like a ref to your popover's child, you can grab one here
-                                                        content={({
-                                                            position,
-                                                            childRect,
-                                                            popoverRect,
-                                                        }) => (
-                                                            <ArrowContainer // if you'd like an arrow, you can import the ArrowContainer!
-                                                                position={
-                                                                    position
-                                                                }
-                                                                childRect={
-                                                                    childRect
-                                                                }
-                                                                popoverRect={
-                                                                    popoverRect
-                                                                }
-                                                                arrowColor={
-                                                                    'blue'
-                                                                }
-                                                                arrowSize={10}
-                                                                arrowStyle={{
-                                                                    opacity: 1,
                                                                 }}
-                                                            >
-                                                                <FormTextInput
-                                                                    onSubmit={
-                                                                        onSubmit
+                                                            </Draggable>
+                                                            {/* prettier-ignore */}
+                                                            <Popover ref={clickMeButtonRef} isOpen={isPopoverOpen[index]} positions={['top', 'right', 'left', 'bottom']} padding={10} clickOutsideCapture={true}
+                                                                onClickOutside={e => {
+                                                                    if (e.target) {
+                                                                        setIsPopoverOpen(textList.map(x => false))
                                                                     }
-                                                                />
-                                                            </ArrowContainer>
-                                                        )}
-                                                    >
-                                                        <AddBtnText
-                                                            onClick={e =>
-                                                                onClickAddText(
-                                                                    e,
-                                                                    index
-                                                                )
-                                                            }
+                                                                }}
+                                                            content={({position, childRect, popoverRect}) => (
+                                                                <ArrowContainer
+                                                                    position={position}
+                                                                    childRect={childRect}
+                                                                    popoverRect={popoverRect}
+                                                                    arrowColor={'blue'}
+                                                                    arrowSize={10}
+                                                                    arrowStyle={{opacity: 1}}
+                                                                >
+                                                                    <FormTextInput onSubmit={values => onSubmit(values, index)} />
+                                                                </ArrowContainer>
+                                                            )}
                                                         >
-                                                            +
-                                                        </AddBtnText>
-                                                    </Popover>
-                                                )}
-                                            </Fragment>
-                                        )
-                                    })
-                                ) : (
-                                    <ListTextEmpty>
-                                        Please add text
-                                    </ListTextEmpty>
-                                )}
-                            </ListTextBox>
+                                                            <AddBtnText onClick={e => onClickAddText(e, index)}>+</AddBtnText>
+                                                        </Popover>
+                                                        </Fragment>
+                                                    )
+                                                })
+                                            ) : (
+                                                <ListTextEmpty>
+                                                    Please add text
+                                                </ListTextEmpty>
+                                            )}
+                                        </ListTextBox>
+                                    )
+                                }}
+                            </Droppable>
                         </ListTextWrapper>
 
+                        {/* prettier-ignore */}
                         <DraggableWrapper>
                             <DroppablePlaceContainer>
-                                {Object.values(listDroppable)
-                                    .filter(x => x.id !== INITIAL_PLACE_KEY)
-                                    .map((droppable, index) => (
-                                        <Droppable
-                                            key={droppable.id + index}
-                                            droppableId={droppable.id}
-                                        >
-                                            {(provided, snapshot) => {
-                                                // console.log('provided', provided)
-                                                // console.log('snapshot', snapshot)
-                                                return (
-                                                    <StyledDroppablePlaceItemContainer>
-                                                        <StyledDroppablePlaceItem
-                                                            {...provided.droppableProps}
-                                                            ref={
-                                                                provided.innerRef
-                                                            }
-                                                            className={`DroppablePlaceItem-${index} ${
-                                                                app_isDarkTheme
-                                                                    ? 'dark'
-                                                                    : ''
-                                                            } ${
-                                                                snapshot.isDraggingOver
-                                                                    ? 'isDraggingOver'
-                                                                    : ''
-                                                            }`}
-                                                        >
-                                                            <DeleteDroppableBtn
-                                                                className='DeleteDroppableBtn'
-                                                                onClick={() =>
-                                                                    onClickDeleteDroppable(
-                                                                        droppable.id
-                                                                    )
-                                                                }
-                                                            >
-                                                                <CloseIcon />
-                                                            </DeleteDroppableBtn>
-                                                            {droppable.list
-                                                                .length > 0 &&
-                                                                droppable.list.map(
-                                                                    (
-                                                                        x,
-                                                                        itemIndex
-                                                                    ) => (
-                                                                        <DraggableItem
-                                                                            key={
-                                                                                x.id
-                                                                            }
-                                                                            id={
-                                                                                x.id
-                                                                            }
-                                                                            text={
-                                                                                x.label
-                                                                            }
-                                                                            index={
-                                                                                itemIndex
-                                                                            }
-                                                                            onDelete={() =>
-                                                                                onClickDelete(
-                                                                                    droppable.id,
-                                                                                    itemIndex
-                                                                                )
-                                                                            }
-                                                                        />
-                                                                    )
-                                                                )}
-                                                            {
-                                                                provided.placeholder
-                                                            }
-                                                        </StyledDroppablePlaceItem>
-                                                    </StyledDroppablePlaceItemContainer>
-                                                )
-                                            }}
-                                        </Droppable>
-                                    ))}
+                                {Object.values(listDroppable).filter(x => x.id !== INITIAL_PLACE_KEY).map((droppable, index) => (
+                                    <Droppable key={droppable.id + index} droppableId={droppable.id}>
+                                        {(provided, snapshot) => {
+                                            // console.log('provided', provided)
+                                            // console.log('snapshot', snapshot)
+                                            return (
+                                                <StyledDroppablePlaceItemContainer>
+                                                    {/* prettier-ignore */}
+                                                    <StyledDroppablePlaceItem {...provided.droppableProps} ref={provided.innerRef} className={`DroppablePlaceItem-${index} ${app_isDarkTheme ? 'dark' : ''} ${snapshot.isDraggingOver ? 'isDraggingOver' : ''}`}>
+                                                        <DeleteDroppableBtn className='DeleteDroppableBtn' onClick={() => onClickDeleteDroppable(droppable.id)}>
+                                                            <CloseIcon />
+                                                        </DeleteDroppableBtn>
+                                                        {droppable.list.length > 0 && droppable.list.map((x, itemIndex) => (
+                                                            <DraggableItem key={x.id} id={x.id} text={x.label} index={itemIndex} onDelete={() => onClickDelete(droppable.id, itemIndex)}/>))}
+                                                        {provided.placeholder}
+                                                    </StyledDroppablePlaceItem>
+                                                </StyledDroppablePlaceItemContainer>
+                                            )
+                                        }}
+                                    </Droppable>
+                                ))}
                             </DroppablePlaceContainer>
-
                             <div className='w-100 text-center'>
                                 <FingoButton
                                     className='text-center'
@@ -896,11 +804,15 @@ const Button = styled.button`
     }
 `
 
-const ListTextWrapper = styled.div`
+const ListTextWrapper = styled.div``
+const ListTextBox = styled.div`
     display: flex;
     flex-wrap: wrap;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-start;
 `
-const ListTextBox = styled.div``
 
 const ListTextItem = styled.div`
     display: inline-flex;
@@ -908,7 +820,8 @@ const ListTextItem = styled.div`
     font-weight: 700;
     height: 30px;
     position: relative;
-    padding: 0.1 0.2rem;
+    padding: 0.1rem 0.2rem;
+    border-radius: 0.3rem;
 
     &.isBlankText {
         cursor: pointer;
@@ -976,6 +889,11 @@ const FormTextInputBox = styled.div`
     background-color: #fff;
     width: 320px;
     min-height: 200px;
+    -webkit-box-shadow: 0px 10px 33px 0px rgba(0, 0, 0, 0.12);
+    -moz-box-shadow: 0px 10px 33px 0px rgba(0, 0, 0, 0.12);
+    box-shadow: 0px 10px 33px 0px rgba(0, 0, 0, 0.12);
+    border-radius: 0.5rem;
+    padding: 1rem 1.4rem;
 `
 
 export default DNDQuizTextPage
