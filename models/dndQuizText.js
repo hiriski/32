@@ -8,7 +8,7 @@ const DNDQuizTextSchema = new mongoose.Schema({
             uuid: String,
             label: String,
             width: Number,
-            isAnswer: Boolean,
+            isBlankText: Boolean,
             order: Number,
         },
     ],
@@ -16,7 +16,7 @@ const DNDQuizTextSchema = new mongoose.Schema({
         {
             uuid: String,
             label: String,
-            correctPlace: String,
+            correctPlaceId: String,
             order: Number,
         },
     ],
