@@ -14,7 +14,6 @@ import { FingoHomeLayout, FingoBaseLayout } from 'src/components/layouts'
 import styled from 'styled-components'
 import { FingoButton, FingoInput } from 'src/components/core'
 import { ReactComponent as AddSvg } from 'src/assets/svg/add.svg'
-import DraggableItem from 'src/components/admin/test-dnd/DraggableItem'
 import toast from 'react-hot-toast'
 import { useApp, useDNDQuizText, usePersistedGuest } from 'src/hooks'
 import { v4 as uuidv4 } from 'uuid'
@@ -24,7 +23,7 @@ import { batch, useDispatch } from 'react-redux'
 import { Popover, ArrowContainer } from 'react-tiny-popover'
 
 const FOOTER_HEIGHT = 70
-const TITLE = 'Label The Candlestick'
+const TITLE = 'DND Text Page'
 const INITIAL_PLACE_KEY = 'INITIAL_PLACE'
 
 const INITIAL_DATA = {
@@ -32,14 +31,6 @@ const INITIAL_DATA = {
     question: 'Lorem ipsum',
     description: null,
     textList: [
-        {
-            uuid: '12876d47-1856-4420-8537-664592f49795',
-            label: 'Lorem ipsum dolor',
-            width: null,
-            isBlankText: false,
-            order: 1,
-            _id: '65961f903d9175ad1c9929c0',
-        },
         {
             uuid: 'c56fa6c0-cafe-4102-95ba-2770e402cefb',
             label: null,
@@ -49,14 +40,6 @@ const INITIAL_DATA = {
             _id: '65961f903d9175ad1c9929c1',
         },
         {
-            uuid: 'c4e430ad-edc2-4a17-90ba-7dd1d8e3548a',
-            label: 'Amet',
-            width: null,
-            isBlankText: false,
-            order: 3,
-            _id: '65961f903d9175ad1c9929c2',
-        },
-        {
             uuid: '29433a87-c79f-4f63-88e8-bd1c7e72127b',
             label: 'consectetur adipiscing elit,',
             width: null,
@@ -64,6 +47,23 @@ const INITIAL_DATA = {
             order: 4,
             _id: '65961f903d9175ad1c9929c3',
         },
+        {
+            uuid: '12876d47-1856-4420-8537-664592f49795',
+            label: 'Lorem ipsum dolor',
+            width: null,
+            isBlankText: false,
+            order: 1,
+            _id: '65961f903d9175ad1c9929c0',
+        },
+        {
+            uuid: 'c4e430ad-edc2-4a17-90ba-7dd1d8e3548a',
+            label: 'Amet',
+            width: null,
+            isBlankText: false,
+            order: 3,
+            _id: '65961f903d9175ad1c9929c2',
+        },
+
         {
             uuid: 'f2da0bba-7499-46db-bce4-903b9acffc08',
             label: null,
@@ -268,16 +268,29 @@ const DNDQuizTextPage = () => {
     }
     const [values, setValues] = useState([])
     const [listDroppable, setListDroppable] = useState(INITIAL_TARGET_PLACES)
-    const [textList, setTextList] = useState(INITIAL_DATA.textList)
+    const [textList, setTextList] = useState([])
+    const [draggableList, setDraggableList] = useState([])
     const [isPopoverOpen, setIsPopoverOpen] = useState(textList.map(x => false))
     const [isOpenPopoverEdit, setIsOpenPopoverEdit] = useState(
         textList.map(x => false)
     )
+    const [openPopoverAddDraggable, setOpenPopoverAddDraggable] = useState(false)
     const [editValues, setEditValues] = useState(null)
 
+    const listTestSortedByOrder = useMemo(() => {
+        // Use .map() to create a new array with the order
+        const newArray = textList.map(obj => ({ ...obj }))
+        // Use .sort() to sort the new array
+        return newArray.sort((a, b) => a.order - b.order)
+    }, [textList])
+
+    const initialize = () => {
+        setTextList(INITIAL_DATA.textList)
+        setDraggableList(INITIAL_DATA.draggableList)
+    }
+
     const onClickReset = () => {
-        // setAvailableValues(INITIAL_AVAILABLE_VALUES)
-        setListDroppable(INITIAL_TARGET_PLACES)
+        initialize()
     }
 
     const onClickAddDroppable = () => {
@@ -402,7 +415,7 @@ const DNDQuizTextPage = () => {
     }
 
     const onClickDeleteItem = paramIndex => {
-        const newTextListItem = textList.filter(
+        const newTextListItem = listTestSortedByOrder.filter(
             (_, index) => index !== paramIndex
         )
 
@@ -418,6 +431,25 @@ const DNDQuizTextPage = () => {
             ])
         } else {
             setTextList(newTextListItem)
+        }
+    }
+
+    const onClickDeleteDraggableItem = paramIndex => {
+        const newDraggableList = draggableList.filter(
+            (_, index) => index !== paramIndex
+        )
+        if (newDraggableList.length === 0) {
+            setDraggableList([
+                {
+                    uuid: uuidv4(),
+                    label: '',
+                    width: null,
+                    isBlankText: false,
+                    order: 1,
+                },
+            ])
+        } else {
+            setDraggableList(newDraggableList)
         }
     }
 
@@ -450,13 +482,17 @@ const DNDQuizTextPage = () => {
 
     const onSubmit = (values, paramIndex) => {
         console.log('VALUES-->>>', values)
-        setIsPopoverOpen(textList.map(x => false))
+        setIsPopoverOpen(listTestSortedByOrder.map(x => false))
 
-        const newValues = textList.splice(paramIndex, 1, values)
+        const newValues = listTestSortedByOrder.splice(paramIndex, 1, values)
         console.log('newValues', newValues)
 
         // setTextList()
     }
+
+    useEffect(() => {
+        initialize()
+    }, [])
 
     return (
         <FingoBaseLayout>
@@ -466,28 +502,11 @@ const DNDQuizTextPage = () => {
             <DragDropContext onDragEnd={onDragEnd}>
                 <Container>
                     <Form>
-                        {/* <DraggableHeader>
+                        <DraggableHeader>
                             <h2 className='text-center mb-2'>{TITLE}</h2>
                             <h4 className='text-center mb-0'>Drag and Drop</h4>
-                        </DraggableHeader> */}
-                        <FormWrapper>
-                            {/* prettier-ignore */}
-                            <Droppable droppableId={INITIAL_PLACE_KEY}>
-                                {(provided, snapshot) => {
-                                    console.log('snapshot', snapshot)
-                                    return (
-                                        <InitialPlaceBox {...provided.droppableProps} ref={provided.innerRef} className={`${app_isDarkTheme ? 'dark' : ''}`}>
-                                            <ItemContainer>
-                                                {Object.values(listDroppable).find(x => x.id === INITIAL_PLACE_KEY).list.map((x, itemIndex) => (
-                                                    <DraggableItem key={x.id} id={x.id} text={x.label} index={itemIndex} onDelete={() => onClickDelete(INITIAL_PLACE_KEY, itemIndex) }/>
-                                                ))}
-                                                {provided.placeholder}
-                                            </ItemContainer>
-                                        </InitialPlaceBox>
-                                    )
-                                }}
-                            </Droppable>
-                        </FormWrapper>
+                        </DraggableHeader>
+                        <FormWrapper></FormWrapper>
 
                         {/* prettier-ignore */}
                         <ListTextWrapper>
@@ -495,8 +514,8 @@ const DNDQuizTextPage = () => {
                                 {(provided, snapshot) => {
                                     return (
                                         <ListTextBox {...provided.droppableProps} ref={provided.innerRef} className={`${app_isDarkTheme ? 'dark' : ''}`}>
-                                            {textList.length > 0 ? (
-                                                textList.map((x, index) => {
+                                            {listTestSortedByOrder.length > 0 ? (
+                                                listTestSortedByOrder.map((x, index) => {
                                                     return (
                                                         <Fragment key={String(index)}>
                                                             <Draggable draggableId={x.uuid} index={index}>
@@ -509,7 +528,7 @@ const DNDQuizTextPage = () => {
                                                                             ) : (
                                                                                 <Popover ref={clickMeButtonRef} isOpen={isOpenPopoverEdit[index]} positions={['top', 'right', 'left', 'bottom']} padding={10} clickOutsideCapture={true} onClickOutside={e => {
                                                                                     if (e.target) {
-                                                                                        setIsOpenPopoverEdit(textList.map(x => false))
+                                                                                        setIsOpenPopoverEdit(listTestSortedByOrder.map(x => false))
                                                                                     }}}
                                                                                     content={({position, childRect, popoverRect}) => (
                                                                                         <ArrowContainer position={position} childRect={childRect} popoverRect={popoverRect} arrowColor={'blue'} arrowSize={10} arrowStyle={{opacity: 1}}>
@@ -529,26 +548,26 @@ const DNDQuizTextPage = () => {
                                                             </Draggable>
                                                             {/* prettier-ignore */}
                                                             <Popover ref={clickMeButtonRef} isOpen={isPopoverOpen[index]} positions={['top', 'right', 'left', 'bottom']} padding={10} clickOutsideCapture={true}
-                                                                onClickOutside={e => {
-                                                                    if (e.target) {
-                                                                        setIsPopoverOpen(textList.map(x => false))
-                                                                    }
-                                                                }}
-                                                            content={({position, childRect, popoverRect}) => (
-                                                                <ArrowContainer
-                                                                    position={position}
-                                                                    childRect={childRect}
-                                                                    popoverRect={popoverRect}
-                                                                    arrowColor={'blue'}
-                                                                    arrowSize={10}
-                                                                    arrowStyle={{opacity: 1}}
-                                                                >
-                                                                    <FormTextInput onSubmit={values => onSubmit(values, index)} />
-                                                                </ArrowContainer>
-                                                            )}
-                                                        >
-                                                            <AddBtnText onClick={e => onClickAddText(e, index)}>+</AddBtnText>
-                                                        </Popover>
+                                                                    onClickOutside={e => {
+                                                                        if (e.target) {
+                                                                            setIsPopoverOpen(listTestSortedByOrder.map(x => false))
+                                                                        }
+                                                                    }}
+                                                                content={({position, childRect, popoverRect}) => (
+                                                                    <ArrowContainer
+                                                                        position={position}
+                                                                        childRect={childRect}
+                                                                        popoverRect={popoverRect}
+                                                                        arrowColor={'blue'}
+                                                                        arrowSize={10}
+                                                                        arrowStyle={{opacity: 1}}
+                                                                    >
+                                                                        <FormTextInput onSubmit={values => onSubmit(values, index)} />
+                                                                    </ArrowContainer>
+                                                                )}
+                                                            >
+                                                                <AddBtnText onClick={e => onClickAddText(e, index)}>+</AddBtnText>
+                                                            </Popover>
                                                         </Fragment>
                                                     )
                                                 })
@@ -566,35 +585,51 @@ const DNDQuizTextPage = () => {
                         {/* prettier-ignore */}
                         <DraggableWrapper>
                             <DroppablePlaceContainer>
-                                {Object.values(listDroppable).filter(x => x.id !== INITIAL_PLACE_KEY).map((droppable, index) => (
-                                    <Droppable key={droppable.id + index} droppableId={droppable.id}>
-                                        {(provided, snapshot) => {
-                                            // console.log('provided', provided)
-                                            // console.log('snapshot', snapshot)
-                                            return (
-                                                <StyledDroppablePlaceItemContainer>
-                                                    {/* prettier-ignore */}
-                                                    <StyledDroppablePlaceItem {...provided.droppableProps} ref={provided.innerRef} className={`DroppablePlaceItem-${index} ${app_isDarkTheme ? 'dark' : ''} ${snapshot.isDraggingOver ? 'isDraggingOver' : ''}`}>
-                                                        <DeleteDroppableBtn className='DeleteDroppableBtn' onClick={() => onClickDeleteDroppable(droppable.id)}>
-                                                            <CloseIcon />
-                                                        </DeleteDroppableBtn>
-                                                        {droppable.list.length > 0 && droppable.list.map((x, itemIndex) => (
-                                                            <DraggableItem key={x.id} id={x.id} text={x.label} index={itemIndex} onDelete={() => onClickDelete(droppable.id, itemIndex)}/>))}
-                                                        {provided.placeholder}
-                                                    </StyledDroppablePlaceItem>
-                                                </StyledDroppablePlaceItemContainer>
-                                            )
-                                        }}
-                                    </Droppable>
-                                ))}
+                                <DraggableHeaderTitle>
+                                    <h2>Draggable List</h2>
+                                </DraggableHeaderTitle>
+                                <Droppable direction='horizontal' droppableId="DRAGGABLE_LIST">
+                                    {(provided, snapshot) => {
+                                        return (
+                                            <DraggableBox {...provided.droppableProps} ref={provided.innerRef} className={`${app_isDarkTheme ? 'dark' : ''}`}>
+                                                {draggableList.length > 0 ? (
+                                                    draggableList.map((x, index) => {
+                                                        return (
+                                                            <Fragment key={String(index)}>
+                                                                <Draggable draggableId={x.uuid} index={index}>
+                                                                    {(provided, snapshot) => {
+                                                                        // console.log('snapshot', snapshot)
+                                                                        return (
+                                                                            <DraggableItem ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps}>
+                                                                                 <span id={x.uuid} onClick={e => onClickEditText(e, index, x)}>{x.label}</span> 
+                                                                                <DeleteTextItemBtn className='DeleteTextItemBtn' onClick={() => onClickDeleteDraggableItem(index)}>
+                                                                                    <CloseIcon />
+                                                                                </DeleteTextItemBtn>
+                                                                            </DraggableItem> 
+                                                                        )
+                                                                    }}
+                                                                </Draggable>
+                                                            </Fragment>
+                                                        )
+                                                    })
+                                                ) : (
+                                                    <ListTextEmpty>
+                                                        Please add text
+                                                    </ListTextEmpty>
+                                                )}
+                                            </DraggableBox>
+                                        )
+                                    }}
+                                </Droppable>
                             </DroppablePlaceContainer>
                             <div className='w-100 text-center'>
                                 <FingoButton
+                                    size="sm"
                                     className='text-center'
                                     style={{ minWidth: 200 }}
                                     onClick={onClickAddDroppable}
                                 >
-                                    + Add Droppable
+                                    + Add Draggable
                                 </FingoButton>
                             </div>
                         </DraggableWrapper>
@@ -648,7 +683,6 @@ const Container = styled.div`
 `
 
 const DraggableWrapper = styled.div`
-    width: 500px;
     padding: 10px;
 `
 
@@ -804,7 +838,10 @@ const Button = styled.button`
     }
 `
 
-const ListTextWrapper = styled.div``
+const ListTextWrapper = styled.div`
+    margin-bottom: 5rem;
+`
+
 const ListTextBox = styled.div`
     display: flex;
     flex-wrap: wrap;
@@ -816,12 +853,13 @@ const ListTextBox = styled.div`
 
 const ListTextItem = styled.div`
     display: inline-flex;
-    font-size: 17px;
+    font-size: 16px;
     font-weight: 700;
     height: 30px;
     position: relative;
     padding: 0.1rem 0.2rem;
     border-radius: 0.3rem;
+    line-height: 1.6;
 
     &.isBlankText {
         cursor: pointer;
@@ -844,9 +882,9 @@ const DeleteTextItemBtn = styled.div`
     border: none;
     outline: none;
     padding: 0;
-    height: 20px;
-    width: 20px;
-    border-radius: 20px;
+    height: 18px;
+    width: 18px;
+    border-radius: 18px;
     background-color: red;
     color: white;
     position: absolute;
@@ -882,6 +920,50 @@ const AddBtnText = styled.div`
     opacity: 0.1;
     &:hover {
         opacity: 1;
+    }
+`
+
+const DraggableBox = styled.div`
+    display: flex;
+    flex-wrap: wrap;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-start;
+`
+
+const DraggableHeaderTitle = styled.div`
+    margin-bottom: 1.2rem;
+    text-align: center;
+    h2 {
+        font-size: 20px;
+        font-weight: 700;
+    }
+`
+
+const DraggableItem = styled.div`
+    display: inline-flex;
+    font-size: 16px;
+    font-weight: 700;
+    height: 30px;
+    position: relative;
+    padding: 0.2rem 0.4rem;
+    border-radius: 0.3rem;
+    border: 1px solid #007bff;
+    background-color: #e4f1ff;
+    margin: 0.3rem;
+    line-height: 1.3;
+
+    .DeleteTextItemBtn {
+        top: 5px;
+        right: 2px;
+    }
+
+    &:hover {
+        background-color: #daecff;
+        .DeleteTextItemBtn {
+            transform: scale(1);
+        }
     }
 `
 
